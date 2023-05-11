@@ -480,7 +480,7 @@ winrt::fire_and_forget QuickBlueWindowsPlugin::SetNotifiableAsync(BluetoothDevic
 
 winrt::fire_and_forget QuickBlueWindowsPlugin::ReadValueAsync(BluetoothDeviceAgent& bluetoothDeviceAgent, std::string service, std::string characteristic) {
   auto gattCharacteristic = co_await bluetoothDeviceAgent.GetCharacteristicAsync(service, characteristic);
-  auto readValueResult = co_await gattCharacteristic.ReadValueAsync();
+  auto readValueResult = co_await gattCharacteristic.ReadValueAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
   auto bytes = to_bytevc(readValueResult.Value());
   OutputDebugString((L"ReadValueAsync " + winrt::to_hstring(characteristic) + L", " + winrt::to_hstring(to_hexstring(bytes)) + L"\n").c_str());
   message_connector_->Send(EncodableMap{
