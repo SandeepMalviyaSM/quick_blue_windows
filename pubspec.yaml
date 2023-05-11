@@ -1,6 +1,6 @@
 name: quick_blue_windows
 description: Windows implementation of the quick_blue plugin.
-version: 1.0.0
+version: 1.0.1
 
 environment:
   sdk: ">=2.13.0 <3.0.0"
