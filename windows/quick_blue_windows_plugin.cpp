@@ -522,45 +522,30 @@ namespace
 
   winrt::fire_and_forget QuickBlueWindowsPlugin::RequestMtuAsync(BluetoothDeviceAgent &bluetoothDeviceAgent, uint64_t expectedMtu)
   {
-    try
-    {
-      OutputDebugString(L"RequestMtuAsync expectedMtu");
-      auto gattSession = co_await GattSession::FromDeviceIdAsync(bluetoothDeviceAgent.device.BluetoothDeviceId());
-      message_connector_->Send(EncodableMap{
-          {"mtuConfig", (int64_t)gattSession.MaxPduSize()},
-      });
-    }
-    catch (...)
-    {
-      OutputDebugString(L"Error reading characteristic value: ");
-    }
+    OutputDebugString(L"RequestMtuAsync expectedMtu");
+    auto gattSession = co_await GattSession::FromDeviceIdAsync(bluetoothDeviceAgent.device.BluetoothDeviceId());
+    message_connector_->Send(EncodableMap{
+        {"mtuConfig", (int64_t)gattSession.MaxPduSize()},
+    });
   }
 
   winrt::fire_and_forget QuickBlueWindowsPlugin::SetNotifiableAsync(BluetoothDeviceAgent &bluetoothDeviceAgent, std::string service, std::string characteristic, std::string bleInputProperty)
   {
-    try
-    {
-      auto gattCharacteristic = co_await bluetoothDeviceAgent.GetCharacteristicAsync(service, characteristic);
-      auto descriptorValue = bleInputProperty == "notification" ? GattClientCharacteristicConfigurationDescriptorValue::Notify
-                             : bleInputProperty == "indication" ? GattClientCharacteristicConfigurationDescriptorValue::Indicate
-                                                                : GattClientCharacteristicConfigurationDescriptorValue::None;
-      auto writeDescriptorStatus = co_await gattCharacteristic.WriteClientCharacteristicConfigurationDescriptorAsync(descriptorValue);
-      if (writeDescriptorStatus != GattCommunicationStatus::Success)
-        OutputDebugString((L"WriteClientCharacteristicConfigurationDescriptorAsync " + winrt::to_hstring((int32_t)writeDescriptorStatus) + L"\n").c_str());
+    auto gattCharacteristic = co_await bluetoothDeviceAgent.GetCharacteristicAsync(service, characteristic);
+    auto descriptorValue = bleInputProperty == "notification" ? GattClientCharacteristicConfigurationDescriptorValue::Notify
+                           : bleInputProperty == "indication" ? GattClientCharacteristicConfigurationDescriptorValue::Indicate
+                                                              : GattClientCharacteristicConfigurationDescriptorValue::None;
+    auto writeDescriptorStatus = co_await gattCharacteristic.WriteClientCharacteristicConfigurationDescriptorAsync(descriptorValue);
+    if (writeDescriptorStatus != GattCommunicationStatus::Success)
+      OutputDebugString((L"WriteClientCharacteristicConfigurationDescriptorAsync " + winrt::to_hstring((int32_t)writeDescriptorStatus) + L"\n").c_str());
 
-      if (bleInputProperty != "disabled")
-      {
-        bluetoothDeviceAgent.valueChangedTokens[characteristic] = gattCharacteristic.ValueChanged({this, &QuickBlueWindowsPlugin::GattCharacteristic_ValueChanged});
-      }
-      else
-      {
-        gattCharacteristic.ValueChanged(std::exchange(bluetoothDeviceAgent.valueChangedTokens[characteristic], {}));
-      }
-    }
-    catch (...)
+    if (bleInputProperty != "disabled")
     {
-      OutputDebugString(L"Error reading characteristic value: ");
-      // OutputDebugString(e.what());
+      bluetoothDeviceAgent.valueChangedTokens[characteristic] = gattCharacteristic.ValueChanged({this, &QuickBlueWindowsPlugin::GattCharacteristic_ValueChanged});
+    }
+    else
+    {
+      gattCharacteristic.ValueChanged(std::exchange(bluetoothDeviceAgent.valueChangedTokens[characteristic], {}));
     }
   }
 
