@@ -565,9 +565,9 @@ namespace
                                   }},
       });
     }
-    catch (const std::exception &e)
+    catch (...)
     {
-      // OutputDebugString(L"Error reading characteristic value: ");
+      OutputDebugString(L"Error reading characteristic value: ");
       // OutputDebugString(e.what());
     }
   }
