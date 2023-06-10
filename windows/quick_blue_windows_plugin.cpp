@@ -334,11 +334,14 @@ namespace
       if (it == connectedDevices.end())
       {
         // result->Error("IllegalArgument", "Unknown devicesId:" + deviceId);
-        return;
+        // return;
+        result->Success(nullptr);
       }
-
-      ReadValueAsync(*it->second, service, characteristic);
-      result->Success(nullptr);
+      else
+      {
+        ReadValueAsync(*it->second, service, characteristic);
+        result->Success(nullptr);
+      }
     }
     else if (method_name.compare("writeValue") == 0)
     {
