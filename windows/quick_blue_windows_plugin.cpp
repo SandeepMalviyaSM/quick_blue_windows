@@ -551,17 +551,25 @@ namespace
 
   winrt::fire_and_forget QuickBlueWindowsPlugin::ReadValueAsync(BluetoothDeviceAgent &bluetoothDeviceAgent, std::string service, std::string characteristic)
   {
-    auto gattCharacteristic = co_await bluetoothDeviceAgent.GetCharacteristicAsync(service, characteristic);
-    auto readValueResult = co_await gattCharacteristic.ReadValueAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
-    auto bytes = to_bytevc(readValueResult.Value());
-    OutputDebugString((L"ReadValueAsync " + winrt::to_hstring(characteristic) + L", " + winrt::to_hstring(to_hexstring(bytes)) + L"\n").c_str());
-    message_connector_->Send(EncodableMap{
-        {"deviceId", std::to_string(gattCharacteristic.Service().Device().BluetoothAddress())},
-        {"characteristicValue", EncodableMap{
-                                    {"characteristic", characteristic},
-                                    {"value", bytes},
-                                }},
-    });
+    try
+    {
+      auto gattCharacteristic = co_await bluetoothDeviceAgent.GetCharacteristicAsync(service, characteristic);
+      auto readValueResult = co_await gattCharacteristic.ReadValueAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
+      auto bytes = to_bytevc(readValueResult.Value());
+      OutputDebugString((L"ReadValueAsync " + winrt::to_hstring(characteristic) + L", " + winrt::to_hstring(to_hexstring(bytes)) + L"\n").c_str());
+      message_connector_->Send(EncodableMap{
+          {"deviceId", std::to_string(gattCharacteristic.Service().Device().BluetoothAddress())},
+          {"characteristicValue", EncodableMap{
+                                      {"characteristic", characteristic},
+                                      {"value", bytes},
+                                  }},
+      });
+    }
+    catch (const std::exception &e)
+    {
+      OutputDebugString(L"Error reading characteristic value: ");
+      OutputDebugString(e.what());
+    }
   }
 
   winrt::fire_and_forget QuickBlueWindowsPlugin::WriteValueAsync(BluetoothDeviceAgent &bluetoothDeviceAgent, std::string service, std::string characteristic, std::vector<uint8_t> value, std::string bleOutputProperty)
