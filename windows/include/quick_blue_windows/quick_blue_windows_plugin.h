@@ -10,14 +10,15 @@
 #endif
 
 #if defined(__cplusplus)
-extern "C" {
+extern "C"
+{
 #endif
 
-FLUTTER_PLUGIN_EXPORT void QuickBlueWindowsPluginRegisterWithRegistrar(
-    FlutterDesktopPluginRegistrarRef registrar);
+    FLUTTER_PLUGIN_EXPORT void QuickBlueWindowsPluginRegisterWithRegistrar(
+        FlutterDesktopPluginRegistrarRef registrar);
 
 #if defined(__cplusplus)
-}  // extern "C"
+} // extern "C"
 #endif
 
-#endif  // FLUTTER_PLUGIN_QUICK_BLUE_WINDOWS_PLUGIN_H_
+#endif // FLUTTER_PLUGIN_QUICK_BLUE_WINDOWS_PLUGIN_H_
