@@ -116,7 +116,7 @@ namespace
       {
         auto gattService = co_await GetServiceAsync(service);
 
-        auto characteristicResult = co_await gattService.GetCharacteristicsAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
+        auto characteristicResult = co_await gattService.GetCharacteristicsAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Cached);
         if (characteristicResult.Status() != GattCommunicationStatus::Success)
           co_return nullptr;
 
