@@ -116,8 +116,11 @@ namespace
       // {
         auto gattService = co_await GetServiceAsync(service);
 
+        System.Console.WriteLine("ashish chuttiya");
+
+        Guid myGuid1 = new Guid(characteristic.Value);
         // auto characteristicResult = co_await gattService.GetCharacteristicsAsync();
-        auto characteristicResult = co_await gattService.GetCharacteristicsForUuidAsync(Guid(characteristic), winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
+        auto characteristicResult = co_await gattService.GetCharacteristicsForUuidAsync(myGuid1, winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
         if (characteristicResult.Status() != GattCommunicationStatus::Success)
           co_return nullptr;
 
