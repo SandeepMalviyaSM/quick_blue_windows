@@ -116,7 +116,7 @@ namespace
       // {
         auto gattService = co_await GetServiceAsync(service);
 
-        System.Console.WriteLine("ashish chuttiya");
+        OutputDebugStringA("Hello, world!");
 
         Guid myGuid1 = new Guid(characteristic.Value);
         // auto characteristicResult = co_await gattService.GetCharacteristicsAsync();
