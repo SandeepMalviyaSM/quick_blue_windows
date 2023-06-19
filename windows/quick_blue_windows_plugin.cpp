@@ -112,8 +112,8 @@ namespace
 
     IAsyncOperation<GattCharacteristic> GetCharacteristicAsync(std::string service, std::string characteristic)
     {
-      if (gattCharacteristics.count(characteristic) == 0)
-      {
+      // if (gattCharacteristics.count(characteristic) == 0)
+      // {
         auto gattService = co_await GetServiceAsync(service);
 
         // auto characteristicResult = co_await gattService.GetCharacteristicsAsync();
@@ -121,11 +121,12 @@ namespace
         if (characteristicResult.Status() != GattCommunicationStatus::Success)
           co_return nullptr;
 
-        for (auto c : characteristicResult.Characteristics())
-          if (to_uuidstr(c.Uuid()) == characteristic)
-            gattCharacteristics.insert(std::make_pair(characteristic, c));
-      }
-      co_return gattCharacteristics.at(characteristic);
+        // for (auto c : characteristicResult.Characteristics())
+        //   if (to_uuidstr(c.Uuid()) == characteristic)
+        //     gattCharacteristics.insert(std::make_pair(characteristic, c));
+      // }
+      co_return characteristicResult;
+
     }
   };
 
