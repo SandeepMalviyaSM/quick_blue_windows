@@ -99,7 +99,7 @@ namespace
     {
       if (gattServices.count(service) == 0)
       {
-        auto serviceResult = co_await device.GetGattServicesAsync();
+        auto serviceResult = co_await device.GetGattServicesAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
         if (serviceResult.Status() != GattCommunicationStatus::Success)
           co_return nullptr;
 
@@ -116,7 +116,7 @@ namespace
       {
         auto gattService = co_await GetServiceAsync(service);
 
-        auto characteristicResult = co_await gattService.GetCharacteristicsAsync();
+        auto characteristicResult = co_await gattService.GetCharacteristicsAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
         if (characteristicResult.Status() != GattCommunicationStatus::Success)
           co_return nullptr;
 
@@ -442,7 +442,7 @@ namespace
     try
     {
       auto device = co_await BluetoothLEDevice::FromBluetoothAddressAsync(bluetoothAddress);
-      auto servicesResult = co_await device.GetGattServicesAsync();
+      auto servicesResult = co_await device.GetGattServicesAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
       if (servicesResult.Status() != GattCommunicationStatus::Success)
       {
         OutputDebugString((L"GetGattServicesAsync error: " + winrt::to_hstring((int32_t)servicesResult.Status()) + L"\n").c_str());
@@ -506,7 +506,7 @@ namespace
   {
     try
     {
-      auto serviceResult = co_await bluetoothDeviceAgent.device.GetGattServicesAsync();
+      auto serviceResult = co_await bluetoothDeviceAgent.device.GetGattServicesAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
       if (serviceResult.Status() != GattCommunicationStatus::Success)
       {
         message_connector_->Send(
@@ -518,7 +518,7 @@ namespace
 
       for (auto s : serviceResult.Services())
       {
-        auto characteristicResult = co_await s.GetCharacteristicsAsync();
+        auto characteristicResult = co_await s.GetCharacteristicsAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
         auto msg = EncodableMap{
             {"deviceId", std::to_string(bluetoothDeviceAgent.device.BluetoothAddress())},
             {"ServiceState", "discovered"},
