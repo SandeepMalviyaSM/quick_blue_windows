@@ -29,6 +29,7 @@
 
 namespace
 {
+
   using namespace winrt::Windows::Foundation;
   using namespace winrt::Windows::Foundation::Collections;
   using namespace winrt::Windows::Storage::Streams;
@@ -40,6 +41,12 @@ namespace
   using flutter::EncodableList;
   using flutter::EncodableMap;
   using flutter::EncodableValue;
+
+  union uint16_t_union
+  {
+    uint16_t uint16;
+    byte bytes[sizeof(uint16_t)];
+  };
 
   std::vector<uint8_t> to_bytevc(IBuffer buffer)
   {
@@ -54,6 +61,14 @@ namespace
     auto writer = DataWriter();
     writer.WriteBytes(bytes);
     return writer.DetachBuffer();
+  }
+
+  std::string to_hexstring(std::vector<uint8_t> bytes)
+  {
+    auto ss = std::stringstream();
+    for (auto b : bytes)
+      ss << std::setw(2) << std::setfill('0') << std::hex << static_cast<int>(b);
+    return ss.str();
   }
 
   std::string to_uuidstr(winrt::guid guid)
@@ -84,7 +99,7 @@ namespace
     {
       if (gattServices.count(service) == 0)
       {
-        auto serviceResult = co_await device.GetGattServicesAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
+        auto serviceResult = co_await device.GetGattServicesAsync();
         if (serviceResult.Status() != GattCommunicationStatus::Success)
           co_return nullptr;
 
@@ -101,7 +116,7 @@ namespace
       {
         auto gattService = co_await GetServiceAsync(service);
 
-        auto characteristicResult = co_await gattService.GetCharacteristicsAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
+        auto characteristicResult = co_await gattService.GetCharacteristicsAsync();
         if (characteristicResult.Status() != GattCommunicationStatus::Success)
           co_return nullptr;
 
@@ -352,6 +367,21 @@ namespace
     }
   }
 
+  std::vector<uint8_t> parseManufacturerDataHead(BluetoothLEAdvertisement advertisement)
+  {
+    if (advertisement.ManufacturerData().Size() == 0)
+      return std::vector<uint8_t>();
+
+    auto manufacturerData = advertisement.ManufacturerData().GetAt(0);
+    // FIXME Compat with REG_DWORD_BIG_ENDIAN
+    uint8_t *prefix = uint16_t_union{manufacturerData.CompanyId()}.bytes;
+    auto result = std::vector<uint8_t>{prefix, prefix + sizeof(uint16_t_union)};
+
+    auto data = to_bytevc(manufacturerData.Data());
+    result.insert(result.end(), data.begin(), data.end());
+    return result;
+  }
+
   void QuickBlueWindowsPlugin::BluetoothLEWatcher_Received(
       BluetoothLEAdvertisementWatcher sender,
       BluetoothLEAdvertisementReceivedEventArgs args)
@@ -369,6 +399,7 @@ namespace
       scan_result_sink_->Success(EncodableMap{
           {"name", winrt::to_string(name)},
           {"deviceId", std::to_string(args.BluetoothAddress())},
+          {"manufacturerDataHead", parseManufacturerDataHead(args.Advertisement())},
           {"rssi", args.RawSignalStrengthInDBm()},
       });
     }
@@ -411,7 +442,7 @@ namespace
     try
     {
       auto device = co_await BluetoothLEDevice::FromBluetoothAddressAsync(bluetoothAddress);
-      auto servicesResult = co_await device.GetGattServicesAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
+      auto servicesResult = co_await device.GetGattServicesAsync();
       if (servicesResult.Status() != GattCommunicationStatus::Success)
       {
         OutputDebugString((L"GetGattServicesAsync error: " + winrt::to_hstring((int32_t)servicesResult.Status()) + L"\n").c_str());
@@ -475,7 +506,7 @@ namespace
   {
     try
     {
-      auto serviceResult = co_await bluetoothDeviceAgent.device.GetGattServicesAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
+      auto serviceResult = co_await bluetoothDeviceAgent.device.GetGattServicesAsync();
       if (serviceResult.Status() != GattCommunicationStatus::Success)
       {
         message_connector_->Send(
@@ -487,7 +518,7 @@ namespace
 
       for (auto s : serviceResult.Services())
       {
-        auto characteristicResult = co_await s.GetCharacteristicsAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
+        auto characteristicResult = co_await s.GetCharacteristicsAsync();
         auto msg = EncodableMap{
             {"deviceId", std::to_string(bluetoothDeviceAgent.device.BluetoothAddress())},
             {"ServiceState", "discovered"},
@@ -560,6 +591,7 @@ namespace
       auto gattCharacteristic = co_await bluetoothDeviceAgent.GetCharacteristicAsync(service, characteristic);
       auto readValueResult = co_await gattCharacteristic.ReadValueAsync(winrt::Windows::Devices::Bluetooth::BluetoothCacheMode::Uncached);
       auto bytes = to_bytevc(readValueResult.Value());
+      OutputDebugString((L"ReadValueAsync " + winrt::to_hstring(characteristic) + L", " + winrt::to_hstring(to_hexstring(bytes)) + L"\n").c_str());
       message_connector_->Send(EncodableMap{
           {"deviceId", std::to_string(gattCharacteristic.Service().Device().BluetoothAddress())},
           {"characteristicValue", EncodableMap{
@@ -581,6 +613,7 @@ namespace
       auto gattCharacteristic = co_await bluetoothDeviceAgent.GetCharacteristicAsync(service, characteristic);
       auto writeOption = bleOutputProperty.compare("withoutResponse") == 0 ? GattWriteOption::WriteWithoutResponse : GattWriteOption::WriteWithResponse;
       auto writeValueStatus = co_await gattCharacteristic.WriteValueAsync(from_bytevc(value), writeOption);
+      OutputDebugString((L"WriteValueAsync " + winrt::to_hstring(characteristic) + L", " + winrt::to_hstring(to_hexstring(value)) + L", " + winrt::to_hstring((int32_t)writeValueStatus) + L"\n").c_str());
     }
     catch (...)
     {
@@ -594,6 +627,7 @@ namespace
     {
       auto uuid = to_uuidstr(sender.Uuid());
       auto bytes = to_bytevc(args.CharacteristicValue());
+      OutputDebugString((L"GattCharacteristic_ValueChanged " + winrt::to_hstring(uuid) + L", " + winrt::to_hstring(to_hexstring(bytes)) + L"\n").c_str());
       message_connector_->Send(EncodableMap{
           {"deviceId", std::to_string(sender.Service().Device().BluetoothAddress())},
           {"characteristicValue", EncodableMap{
